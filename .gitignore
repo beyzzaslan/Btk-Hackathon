@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+env/
+
+# Environment variables (şifreler)
+.env
+
+# IDE / Editor
+.vscode/
+.idea/
+
+# OS dosyaları
+.DS_Store
+Thumbs.db
