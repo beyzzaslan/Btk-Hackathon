@@ -14,7 +14,7 @@ function scoreLabel(score) {
 
 function scoreColor(score) {
     if (score >= 75) return "#22c55e"
-    if (score >= 50) return "#eab308"
+    if (score >= 50) return "#dacb21"
     if (score >= 25) return "#f97316"
     return "#ef4444"
 }
