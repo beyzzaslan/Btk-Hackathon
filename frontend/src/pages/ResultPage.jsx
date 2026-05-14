@@ -3,6 +3,10 @@ import { useEffect, useState } from "react"
 import Navbar from "../components/Navbar"
 import { analyzeUrl, saveToHistory } from "../api/analyze"
 import PriceHistoryModal from "../components/PriceHistoryModal"
+import ManipulationModal from "../components/ManipulationModal"
+import DomainModal from "../components/DomainModal"
+import ContentModal from "../components/ContentModal"
+import ReviewModal from "../components/ReviewModal"
 
 const scoreColor = (score) => {
   if (score >= 75) return "#22c55e"
@@ -17,6 +21,9 @@ const badgeStyles = {
   ok: { background: "#052e16", color: "#4ade80" }
 }
 
+const clickableModules = ["Sahte indirim", "Manipülasyon teknikleri", "Alan adı bilgisi", "İçerik tutarlılığı", "Yorum analizi"]
+const detayGorunecekler = ["Manipülasyon teknikleri", "Alan adı bilgisi", "İçerik tutarlılığı", "Yorum analizi"]
+
 function ResultPage() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -25,8 +32,21 @@ function ResultPage() {
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+
   const [priceData, setPriceData] = useState(null)
   const [showPriceModal, setShowPriceModal] = useState(false)
+
+  const [showManipulationModal, setShowManipulationModal] = useState(false)
+  const [manipulationPills, setManipulationPills] = useState([])
+
+  const [showDomainModal, setShowDomainModal] = useState(false)
+  const [domainModule, setDomainModule] = useState(null)
+
+  const [showContentModal, setShowContentModal] = useState(false)
+  const [contentModule, setContentModule] = useState(null)
+
+  const [showReviewModal, setShowReviewModal] = useState(false)
+  const [reviewModule, setReviewModule] = useState(null)
 
   useEffect(() => {
     if (!url) { navigate("/"); return }
@@ -44,35 +64,55 @@ function ResultPage() {
   }, [url])
 
   function handleModuleClick(m) {
-    if (m.title !== "Sahte indirim") return
-
-    fetch(`/api/price-history?url=${encodeURIComponent(url)}`)
-      .then((r) => r.json())
-      .then((data) => {
-        setPriceData(data)
-        setShowPriceModal(true)
-      })
-      .catch(() => {
-        setPriceData({
-          product_url: url,
-          current_price: 299,
-          currency: "TRY",
-          price_history: [
-            { date: "2024-11-01", price: 4999 },
-            { date: "2024-12-01", price: 299 },
-            { date: "2025-01-01", price: 320 },
-            { date: "2025-02-01", price: 299 },
-            { date: "2025-03-01", price: 299 },
-            { date: "2025-04-01", price: 299 }
-          ],
-          claimed_original: 4999,
-          lowest_ever: 299,
-          highest_ever: 4999,
-          is_fake_discount: true,
-          fake_reason: "Referans fiyat manipülasyonu tespit edildi. Ürün hiçbir zaman 4.999₺'ye satılmadı."
+    if (m.title === "Sahte indirim") {
+      fetch(`/api/price-history?url=${encodeURIComponent(url)}`)
+        .then((r) => r.json())
+        .then((data) => {
+          setPriceData(data)
+          setShowPriceModal(true)
         })
-        setShowPriceModal(true)
-      })
+        .catch(() => {
+          setPriceData({
+            product_url: url,
+            current_price: 299,
+            currency: "TRY",
+            price_history: [
+              { date: "2024-11-01", price: 4999 },
+              { date: "2024-12-01", price: 299 },
+              { date: "2025-01-01", price: 320 },
+              { date: "2025-02-01", price: 299 },
+              { date: "2025-03-01", price: 299 },
+              { date: "2025-04-01", price: 299 }
+            ],
+            claimed_original: 4999,
+            lowest_ever: 299,
+            highest_ever: 4999,
+            is_fake_discount: true,
+            fake_reason: "Referans fiyat manipülasyonu tespit edildi. Ürün hiçbir zaman 4.999₺'ye satılmadı."
+          })
+          setShowPriceModal(true)
+        })
+    }
+
+    if (m.title === "Manipülasyon teknikleri") {
+      setManipulationPills(m.pills)
+      setShowManipulationModal(true)
+    }
+
+    if (m.title === "Alan adı bilgisi") {
+      setDomainModule(m)
+      setShowDomainModal(true)
+    }
+
+    if (m.title === "İçerik tutarlılığı") {
+      setContentModule(m)
+      setShowContentModal(true)
+    }
+
+    if (m.title === "Yorum analizi") {
+      setReviewModule(m)
+      setShowReviewModal(true)
+    }
   }
 
   if (loading) {
@@ -113,7 +153,21 @@ function ResultPage() {
     <div style={{ background: "var(--bg-primary)", minHeight: "100vh" }}>
       <Navbar />
 
-      {showPriceModal && <PriceHistoryModal data={priceData} onClose={() => setShowPriceModal(false)} />}
+      {showPriceModal && (
+        <PriceHistoryModal data={priceData} onClose={() => setShowPriceModal(false)} />
+      )}
+      {showManipulationModal && (
+        <ManipulationModal pills={manipulationPills} onClose={() => setShowManipulationModal(false)} />
+      )}
+      {showDomainModal && (
+        <DomainModal module={domainModule} onClose={() => setShowDomainModal(false)} />
+      )}
+      {showContentModal && (
+        <ContentModal module={contentModule} onClose={() => setShowContentModal(false)} />
+      )}
+      {showReviewModal && (
+        <ReviewModal module={reviewModule} onClose={() => setShowReviewModal(false)} />
+      )}
 
       <div style={{ maxWidth: 680, margin: "0 auto", padding: "32px 16px" }}>
 
@@ -161,34 +215,46 @@ function ResultPage() {
         )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-          {result.modules.map((m) => (
-            <div
-              key={m.title}
-              onClick={() => handleModuleClick(m)}
-              style={{ background: "var(--bg-card)", border: "0.5px solid var(--border)", borderRadius: 12, padding: "14px 16px", cursor: m.title === "Sahte indirim" ? "pointer" : "default" }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                <span style={{ fontSize: 14 }}>{m.icon}</span>
-                <span style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 500, flex: 1 }}>{m.title}</span>
-                {m.title === "Sahte indirim" && (
-                  <span style={{ color: "var(--text-muted)", fontSize: 10, marginRight: 4 }}>Geçmişi gör →</span>
-                )}
-                <span style={{ ...badgeStyles[m.badgeType], fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 500 }}>
-                  {m.badge}
-                </span>
-              </div>
-              <p style={{ color: "var(--text-secondary)", fontSize: 11, lineHeight: 1.6 }}>{m.text}</p>
-              {m.pills.length > 0 && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 8 }}>
-                  {m.pills.map((pill) => (
-                    <span key={pill} style={{ fontSize: 10, background: "var(--bg-secondary)", color: "var(--text-muted)", border: "0.5px solid var(--border)", padding: "2px 8px", borderRadius: 20 }}>
-                      {pill}
-                    </span>
-                  ))}
+          {result.modules.map((m) => {
+            const isClickable = clickableModules.includes(m.title)
+            return (
+              <div
+                key={m.title}
+                onClick={() => handleModuleClick(m)}
+                style={{
+                  background: "var(--bg-card)",
+                  border: "0.5px solid var(--border)",
+                  borderRadius: 12,
+                  padding: "14px 16px",
+                  cursor: isClickable ? "pointer" : "default"
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                  <span style={{ fontSize: 14 }}>{m.icon}</span>
+                  <span style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 500, flex: 1 }}>{m.title}</span>
+                  {m.title === "Sahte indirim" && (
+                    <span style={{ color: "var(--text-muted)", fontSize: 10, marginRight: 4 }}>Geçmişi gör →</span>
+                  )}
+                  {detayGorunecekler.includes(m.title) && (
+                    <span style={{ color: "var(--text-muted)", fontSize: 10, marginRight: 4 }}>Detay gör →</span>
+                  )}
+                  <span style={{ ...badgeStyles[m.badgeType], fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 500 }}>
+                    {m.badge}
+                  </span>
                 </div>
-              )}
-            </div>
-          ))}
+                <p style={{ color: "var(--text-secondary)", fontSize: 11, lineHeight: 1.6 }}>{m.text}</p>
+                {m.pills.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 8 }}>
+                    {m.pills.map((pill) => (
+                      <span key={pill} style={{ fontSize: 10, background: "var(--bg-secondary)", color: "var(--text-muted)", border: "0.5px solid var(--border)", padding: "2px 8px", borderRadius: 20 }}>
+                        {pill}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
 
         <div style={{ display: "flex", gap: 8 }}>
