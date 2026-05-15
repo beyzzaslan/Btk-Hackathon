@@ -10,18 +10,32 @@
   --text-muted: #52525b;
   --input-bg: #18181b;
   --input-border: #3f3f46;
+
+  /* Koyu tema — soft mavi */
+  --accent: #60a5fa;
+  --accent-hover: #3b82f6;
+  --accent-subtle: rgba(96, 165, 250, 0.12);
+  --accent-border: rgba(96, 165, 250, 0.25);
+  --accent-glow: rgba(96, 165, 250, 0.2);
 }
 
 [data-theme="light"] {
-  --bg-primary: #ffffff;
-  --bg-secondary: #f4f4f5;
+  --bg-primary: #F3F8FC;
+  --bg-secondary: #E6F0F8;
   --bg-card: #ffffff;
-  --border: #e4e4e7;
-  --text-primary: #09090b;
-  --text-secondary: #71717a;
-  --text-muted: #a1a1aa;
-  --input-bg: #f4f4f5;
-  --input-border: #d4d4d8;
+  --border: #C7E0F0;
+  --text-primary: #0f1f2e;
+  --text-secondary: #3d5a70;
+  --text-muted: #7a9ab0;
+  --input-bg: #E6F0F8;
+  --input-border: #C7E0F0;
+
+  /* Açık tema — logo renkleri */
+  --accent: #a855f7;
+  --accent-hover: #9333ea;
+  --accent-subtle: rgba(168, 85, 247, 0.08);
+  --accent-border: rgba(168, 85, 247, 0.25);
+  --accent-glow: rgba(168, 85, 247, 0.15);
 }
 
 body {
