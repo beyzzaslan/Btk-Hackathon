@@ -1,23 +1,39 @@
+import asyncio
 from app.services.scraping_service import ScrapingService
-from app.services.gemini_service import GeminiService
 from app.schemas.scan_schema import ScanResponse, Module, Bar
+from app.core.config import settings
+
+# Ajanları dahil ediyoruz
+from app.agents.review_agent import ReviewAgent
+from app.agents.product_agent import ProductAgent
 
 
 class AnalysisService:
 
     def __init__(self):
         self.scraper = ScrapingService()
-        self.gemini = GeminiService()
+        # Her ajan artık kendi özel API anahtarını kullanıyor
+        self.review_agent = ReviewAgent(settings.GEMINI_API_KEY_REVIEW)
+        self.product_agent = ProductAgent(settings.GEMINI_API_KEY_PRODUCT)
 
     async def analyze(self, url: str) -> ScanResponse:
         scraped = await self.scraper.scrape(url)
-        ai_result = await self.gemini.analyze(scraped)
 
         if scraped.get("error") and not scraped.get("raw_text"):
             return ScanResponse(
                 url=url, score=50, label="Hata", summary=scraped.get("error"),
                 modules=[], bars=[], error=scraped.get("error")
             )
+
+        # 🚀 AJANLARI PARALEL ÇALIŞTIRIYORUZ! (Süreyi yarı yarıya düşürür)
+        review_task = self.review_agent.analyze(scraped)
+        product_task = self.product_agent.analyze(scraped)
+        
+        # Her iki ajanın işini bitirmesini bekliyoruz
+        review_result, product_result = await asyncio.gather(review_task, product_task)
+
+        # Frontend yapısı bozulmasın diye sözlükleri birleştiriyoruz
+        ai_result = {**review_result, **product_result}
 
         def get_badge_type(status: str) -> str:
             status_lower = status.lower()

@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     DEBUG: bool = False
 
     GEMINI_API_KEY: str = ""
+    GEMINI_API_KEY_REVIEW: str = ""
+    GEMINI_API_KEY_PRODUCT: str = ""
 
     ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]
 
