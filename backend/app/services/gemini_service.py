@@ -55,32 +55,60 @@ SADECE VE SADECE aşağıdaki JSON formatında yanıt ver, markdown kullanma, sa
   "score_discount_reality": <0-100 arasi sayi>,
   "score_manipulation": <0-100 arasi sayi, yüksek skor manipülasyon VAR demek>,
   "score_domain": <0-100 arasi sayi, orn: 30>,
+  
   "analysis_review": {{
     "status": "<Şüpheli | İyi | Normal | Çok Kötü>",
     "description": "<Yorumlar hakkinda detayli kisa metin, orn: 48 yorumdan 31'i şüpheli bulundu.>",
-    "badges": ["Aynı gün 15 yorum", "Aşırı jenerik dil", "vs."]
+    "badges": ["Aynı gün 15 yorum", "Aşırı jenerik dil", "%97 beş yıldız"],
+    "details": {{
+      "total_reviews": <İncelediğin toplam yorum sayısı>,
+      "suspicious_reviews": <Şüpheli bulduğun yorum sayısı>,
+      "examples": [
+        {{"stars": "⭐⭐⭐⭐⭐", "text": "<Örnek şüpheli yorum>", "reason": "<Neden şüpheli? Örn: Jenerik ifade>"}}
+      ]
+    }}
   }},
+  
   "analysis_discount": {{
     "status": "<Yüksek risk | Düşük risk | Temiz>",
     "description": "<İndirim gercekligi analizi>",
     "badges": ["Sayaç sıfırlanıyor", "Referans fiyat yok", "vs."]
   }},
+  
   "analysis_manipulation": {{
     "status": "<2 teknik | Temiz | Şüpheli>",
     "description": "<Dark pattern analizi>",
-    "badges": ["Son 2 ürün kaldı!", "Fırsatı kaçırma", "vs."]
+    "badges": ["Son 2 ürün kaldı!", "Fırsatı kaçırma", "Sahte sayaç", "Şu an 38 kişi bakıyor", "Fiyatlar artıyor"],
+    "details": [
+      {{"icon": "🚨", "title": "Yapay Aciliyet", "description": "<Bulduğun manipülasyonun tam açıklaması>"}}
+    ]
   }},
+  
   "analysis_domain": {{
     "status": "<Dikkat | Temiz | Şüpheli>",
     "description": "<Domain ve url bazli hizli analiz, SSL var vs>",
-    "badges": ["SSL ✓", "14 günlük domain", "vs."]
+    "badges": ["14 günlük domain", "SSL ✓", "Blacklist temiz"],
+    "details": {{
+      "domain_age": "<X günlük domain>",
+      "ssl_ok": <true veya false>,
+      "blacklist_ok": <true veya false>
+    }}
   }},
+  
   "analysis_content": {{
     "status": "<Normal | Tutarsız>",
     "description": "<Fiyat ve icerik tutarliligi>",
-    "badges": []
+    "badges": [],
+    "details": {{
+      "price_consistency": <true/false>,
+      "description_consistency": <true/false>,
+      "shipping_consistency": <true/false>,
+      "seller_consistency": <true/false>
+    }}
   }}
-}}"""
+}}
+DİKKAT: JSON formatını ve 'details' objelerinin içindeki yapıları KESİNLİKLE bozma, eksiksiz doldur!
+"""
 
     def _parse_response(self, response_text: str) -> Dict[str, Any]:
         # JSON markdown bloğunu temizle (eğer Gemini koyarsa)

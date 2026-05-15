@@ -1,5 +1,5 @@
 from pydantic import BaseModel, field_validator
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 class ScanRequest(BaseModel):
     url: str
@@ -11,27 +11,25 @@ class ScanRequest(BaseModel):
             raise ValueError("Geçerli bir URL giriniz")
         return v.strip()
 
-class SubAnalysis(BaseModel):
-    status: str
-    description: str
-    badges: List[str]
+class Module(BaseModel):
+    icon: str
+    title: str
+    text: str
+    badge: str
+    badgeType: str
+    pills: List[str]
+    details: Optional[Any] = None
+
+class Bar(BaseModel):
+    label: str
+    value: int
+    color: str
 
 class ScanResponse(BaseModel):
     url: str
-    product_name: Optional[str] = None
-    product_price: Optional[str] = None
-    trust_score: int
-    trust_label: str
-    
-    score_review_quality: int
-    score_discount_reality: int
-    score_manipulation: int
-    score_domain: int
-    
-    analysis_review: SubAnalysis
-    analysis_discount: SubAnalysis
-    analysis_manipulation: SubAnalysis
-    analysis_domain: SubAnalysis
-    analysis_content: SubAnalysis
-    
+    score: int
+    label: str
+    summary: str
+    modules: List[Module]
+    bars: List[Bar]
     error: Optional[str] = None
