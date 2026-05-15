@@ -1,7 +1,7 @@
 const MOCK_MODE = true
 
 const mockResult = {
-  score: 72,
+  score: 80,
   label: "Dikkatli Ol",
   summary: "Bu sitede dikkat edilmesi gereken noktalar tespit edildi.",
   modules: [
