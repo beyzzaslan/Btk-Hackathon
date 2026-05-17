@@ -4,7 +4,6 @@ import { useEffect, useState, useRef } from "react"
 import Navbar from "../components/Navbar"
 import { analyzeUrl, saveToHistory } from "../api/analyze"
 
-// Zehra'nın Harika Modal Bileşenleri
 import PriceHistoryModal from "../components/PriceHistoryModal"
 import ManipulationModal from "../components/ManipulationModal"
 import DomainModal from "../components/DomainModal"
