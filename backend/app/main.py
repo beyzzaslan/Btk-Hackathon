@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.routes import scan, health
+from fastapi.staticfiles import StaticFiles
+import os
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -17,10 +19,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# API Yönlendirmeleri (Her zaman en üstte olmalı)
 app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(scan.router, prefix="/api", tags=["scan"])
 
 
-@app.get("/")
-async def root():
-    return {"message": f"{settings.APP_NAME} çalışıyor", "version": settings.APP_VERSION}
+if os.path.exists("static"):
+    app.mount("/", StaticFiles(directory="static", html=True), name="static")
