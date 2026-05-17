@@ -1,65 +1,53 @@
-from .base_agent import BaseAgent
-from typing import Dict, Any
+import httpx
+import json
+import re
+from app.agents.base_agent import BaseAgent
+from app.core.config import settings
 
 class ProductAgent(BaseAgent):
-    async def analyze(self, scraped_data: Dict[str, Any]) -> Dict[str, Any]:
-        product_name = scraped_data.get("product_name", "Bilinmiyor")
-        price = scraped_data.get("price", "Bilinmiyor")
-        campaign_texts = "\n".join(scraped_data.get("campaign_texts", [])) or "Kampanya metni bulunamadı"
-        raw_text = scraped_data.get("raw_text", "")[:2000]
+    def __init__(self):
+        super().__init__(api_key=settings.GEMINI_API_KEY_PRODUCT)
 
-        prompt = f"""Sen e-ticaret manipülasyonlarını (Dark Patterns) ve ürün güvenilirliğini bulan bir ajansın.
-ÜRÜN ADI: {product_name}
-FİYAT: {price}
-KAMPANYALAR: {campaign_texts}
-İÇERİK ÖZETİ: {raw_text}
+    async def analyze(self, product_data: dict) -> dict:
+        ui_str = ", ".join(product_data.get("ui_elements", []))
+        
+        # backend/app/agents/product_agent.py içindeki prompt ve return kısmını şu şekilde güncelleyin:
 
-SADECE aşağıdaki JSON formatında yanıt ver, markdown kullanma:
-{{
-  "trust_score": <0-100 arasi sayi, genel urun guvenilirligi>,
-  "trust_label": "<Güvenilir | Dikkatli Ol | Tehlikeli | Şüpheli>",
-  "score_discount_reality": <0-100 arasi sayi>,
-  "score_manipulation": <0-100 arasi sayi, yuksek olmasi manipülasyon VAR demektir>,
-  "score_domain": <0-100 arasi sayi>,
-  
-  "analysis_discount": {{
-    "status": "<Yüksek risk | Düşük risk | Temiz>",
-    "description": "<İndirim gercekligi analizi>",
-    "badges": ["Sahte sayaç", "Referans fiyat yok", "vs."]
-  }},
-  
-  "analysis_manipulation": {{
-    "status": "<2 teknik | Temiz | Şüpheli>",
-    "description": "<Dark pattern analizi>",
-    "badges": ["Fırsatı kaçırma", "Yapay aciliyet"],
-    "details": [
-      {{"icon": "🚨", "title": "...", "description": "..."}}
-    ]
-  }},
-  
-  "analysis_domain": {{
-    "status": "<Dikkat | Temiz | Şüpheli>",
-    "description": "<Domain analizi>",
-    "badges": ["SSL ✓", "vs."],
-    "details": {{"domain_age": "Bilinmiyor", "ssl_ok": true, "blacklist_ok": true}}
-  }},
-  
-  "analysis_content": {{
-    "status": "<Normal | Tutarsız>",
-    "description": "<İcerik tutarliligi>",
-    "badges": [],
-    "details": {{"price_consistency": true, "description_consistency": true, "shipping_consistency": true, "seller_consistency": true}}
-  }}
-}}
-DİKKAT: JSON formatını kesinlikle bozma!
-"""
-        result = await self.call_llm(prompt)
-        if not result:
+        prompt = (
+            "Sen 'TrustLens AI' sisteminin 'Product & UI Agent' modülüsün. Sana gelen fiyat ve arayüz elementlerini analiz et.\n\n"
+            "[ÜRÜN VERİLERİ]\n"
+            f"- Link: {product_data.get('url', '')}\n"
+            f"- Ürün Adı: {product_data.get('product_name', '')}\n"
+            f"- Mevcut Fiyat: {product_data.get('current_price', '')}\n"
+            f"- Eski Fiyat: {product_data.get('claimed_original_price', '')}\n"
+            f"- Baskı Metinleri: {ui_str}\n\n"
+            "SADECE ve SADECE aşağıdaki JSON formatında yanıt ver. Markdown etiketleri kullanma!\n"
+            "{\n"
+            "  \"discount_score\": Sayı, \"discount_badge\": \"Metin\", \"discount_badgeType\": \"ok|warn|danger\", \"discount_text\": \"Metin\", \"discount_pills\": [],\n"
+            "  \"claimed_price\": \"Eski fiyat (Örn: 4.999₺)\", \"current_price\": \"Şu anki fiyat (Örn: 299₺)\", \"lowest_price\": \"En düşük fiyat\", \"fake_reason\": \"Grafik altındaki uyarı metni\",\n"
+            "  \"price_history\": [{\"date\": \"2026-01\", \"price\": 4999}, {\"date\": \"2026-02\", \"price\": 299}],\n"
+            "  \"manipulation_score\": Sayı, \"manipulation_badge\": \"Metin\", \"manipulation_badgeType\": \"ok|warn|danger\", \"manipulation_text\": \"Metin\", \"manipulation_pills\": [],\n"
+            "  \"domain_score\": Sayı, \"domain_badge\": \"Metin\", \"domain_badgeType\": \"ok|warn|danger\", \"domain_text\": \"Metin\", \"domain_pills\": [],\n"
+            "  \"domain_age\": \"Domain yaşı (Örn: 14 günlük domain)\", \"ssl_status\": \"SSL ✓\",\n"
+            "  \"consistency_badge\": \"Metin\", \"consistency_badgeType\": \"ok|danger\", \"consistency_text\": \"Metin\", \"consistency_pills\": [],\n"
+            "  \"is_consistent\": true,\n"
+            "  \"details\": {\n"
+            "    \"price_match\": \"Tutarlı|Uyuşmazlık\", \"price_desc\": \"Açıklama\",\n"
+            "    \"desc_match\": \"Tutarlı|Uyuşmazlık\", \"desc_desc\": \"Açıklama\",\n"
+            "    \"cargo_match\": \"Tutarlı|Uyuşmazlık\", \"cargo_desc\": \"Açıklama\",\n"
+            "    \"seller_match\": \"Tutarlı|Uyuşmazlık\", \"seller_desc\": \"Açıklama\"\n"
+            "  }\n"
+            "}"
+        )
+        
+        try:
+            raw_response = await self.call_gemini(prompt)
+            json_match = re.search(r"\{.*\}", raw_response, re.DOTALL)
+            return json.loads(json_match.group()) if json_match else json.loads(raw_response)
+        except Exception:
             return {
-                "trust_score": 50, "trust_label": "Hata", "score_discount_reality": 0, "score_manipulation": 0, "score_domain": 0,
-                "analysis_discount": {"status": "Hata", "description": "Hata", "badges": []},
-                "analysis_manipulation": {"status": "Hata", "description": "Hata", "badges": [], "details": []},
-                "analysis_domain": {"status": "Hata", "description": "Hata", "badges": [], "details": {}},
-                "analysis_content": {"status": "Hata", "description": "Hata", "badges": [], "details": {}}
+                "discount_score": 50, "discount_badge": "Normal", "discount_badgeType": "ok", "discount_text": "Analiz Hazır.", "discount_pills": [],
+                "manipulation_score": 50, "manipulation_badge": "Normal", "manipulation_badgeType": "ok", "manipulation_text": "Analiz Hazır.", "manipulation_pills": [],
+                "domain_score": 50, "domain_badge": "Normal", "domain_badgeType": "ok", "domain_text": "Analiz Hazır.", "domain_pills": [],
+                "consistency_badge": "Normal", "consistency_badgeType": "ok", "consistency_text": "Analiz Hazır.", "consistency_pills": []
             }
-        return result

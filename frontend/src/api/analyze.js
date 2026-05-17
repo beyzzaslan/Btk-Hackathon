@@ -1,4 +1,7 @@
-const MOCK_MODE = true
+// src/api/analyze.js
+
+// Canlı analize geçmek için MOCK_MODE'u false yapıyoruz Furkan!
+const MOCK_MODE = false;
 
 const mockResult = {
   score: 80,
@@ -20,79 +23,61 @@ const mockResult = {
       badge: "Yüksek risk",
       badgeType: "danger",
       pills: ["Sayaç sıfırlanıyor", "Referans fiyat yok"]
-    },
-    {
-      icon: "🧠",
-      title: "Manipülasyon teknikleri",
-      text: "Yapay aciliyet ve kayıp kaçınımı dili tespit edildi.",
-      badge: "2 teknik",
-      badgeType: "warn",
-      pills: ["Son 2 ürün kaldı!", "Fırsatı kaçırma"]
-    },
-    {
-      icon: "🌐",
-      title: "Alan adı bilgisi",
-      text: "Domain 14 gün önce açılmış. SSL mevcut ancak domain yaşı çok düşük.",
-      badge: "Dikkat",
-      badgeType: "danger",
-      pills: ["14 günlük domain", "SSL ✓", "Blacklist temiz"]
-    },
-    {
-      icon: "🛡️",
-      title: "İçerik tutarlılığı",
-      text: "Fiyat ve ürün açıklaması birbiriyle tutarlı görünüyor.",
-      badge: "Normal",
-      badgeType: "ok",
-      pills: []
     }
   ],
   bars: [
-    { label: "Yorum kalitesi", value: 48, color: "#ef4444" },
-    { label: "İndirim gerçekliği", value: 60, color: "#eab308" },
-    { label: "Manipülasyon", value: 55, color: "#eab308" },
-    { label: "Alan adı", value: 30, color: "#ef4444" }
+    { label: "Yorum kalitesi", value: 48 },
+    { label: "İndirim gerçekliği", value: 60 },
+    { label: "Manipülasyon", value: 55 },
+    { label: "Alan adı", value: 30 }
   ]
-}
+};
 
 export async function analyzeUrl(url) {
   try {
-    new URL(url)
+    new URL(url);
   } catch {
-    throw new Error("Geçersiz URL formatı.")
+    throw new Error("Geçersiz URL formatı.");
   }
 
-  const hostname = new URL(url).hostname
+  const hostname = new URL(url).hostname;
 
-  const domainRegex = /^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/
+  const domainRegex = /^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
   if (!domainRegex.test(hostname)) {
-    throw new Error("Geçersiz URL. Lütfen gerçek bir site adresi girin.")
+    throw new Error("Geçersiz URL. Lütfen gerçek bir site adresi girin.");
   }
 
-  const blocked = ["localhost", "127.0.0.1", "example.com", "orneksite.com"]
+  const blocked = ["localhost", "127.0.0.1", "example.com", "orneksite.com"];
   if (blocked.some((b) => hostname.includes(b))) {
-    throw new Error("Bu URL analiz edilemiyor.")
+    throw new Error("Bu URL analiz edilemiyor.");
   }
 
   if (MOCK_MODE) {
-    await new Promise((res) => setTimeout(res, 2000))
-    return mockResult
+    await new Promise((res) => setTimeout(res, 2000));
+    return mockResult;
   }
 
-  const response = await fetch("http://localhost:8000/analyze", {
+  // Ezgi'nin paralel router mimarisi: http://localhost:8000/api/scan
+  const response = await fetch("http://localhost:8000/api/scan", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ url })
-  })
+    headers: {
+      "Content-Type": "application/json",
+    },
+    // Hatalı olan 'inputUrl' kısmını parametreden gelen 'url' ile düzelttim:
+    body: JSON.stringify({ url: url }) 
+  });
 
   if (!response.ok) {
-    throw new Error("Analiz sırasında bir hata oluştu.")
+    throw new Error("Analiz sırasında bir hata oluştu.");
   }
 
-  return response.json()
+  const data = await response.json();
+  // Backend'den gelen gerçek zekayı React ekranına fırlatıyoruz:
+  return data; 
 }
 
 export function saveToHistory(url, result) {
-  const history = getHistory()
+  const history = getHistory();
   const newItem = {
     id: Date.now(),
     url,
@@ -100,15 +85,15 @@ export function saveToHistory(url, result) {
     label: result.label,
     summary: result.summary,
     date: new Date().toLocaleDateString("tr-TR")
-  }
-  const updated = [newItem, ...history].slice(0, 50)
-  localStorage.setItem("trustlens_history", JSON.stringify(updated))
+  };
+  const updated = [newItem, ...history].slice(0, 50);
+  localStorage.setItem("trustlens_history", JSON.stringify(updated));
 }
 
 export function getHistory() {
   try {
-    return JSON.parse(localStorage.getItem("trustlens_history")) || []
+    return JSON.parse(localStorage.getItem("trustlens_history")) || [];
   } catch {
-    return []
+    return [];
   }
 }
